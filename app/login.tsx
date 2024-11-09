@@ -1,5 +1,4 @@
-
-
+import React, { useState } from "react";
 import {
   Button,
   ImageBackground,
@@ -8,8 +7,8 @@ import {
   Text,
   View,
   TextInput,
+  Alert,
 } from "react-native";
-import React from "react";
 import ButtonComponent from "@/components/ButtonComponent";
 import { router } from "expo-router";
 import { Colors } from "@/constants/Colors";
@@ -20,9 +19,55 @@ import {
 } from "@expo/vector-icons";
 
 export default function index() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("https://kabuuta.icu/login.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          email: email,
+          password: password,
+        }).toString(),
+      });
+
+      const data = await response.json();
+
+      console.log(data);
+      console.log("email: " + email);
+      console.log("password: " + password);
+      
+      if (response.ok) {
+        if(data.success){
+          // Handle successful login (e.g., save token, navigate)
+          Alert.alert(data.message, "Welcome back!");
+          router.navigate("/(tabs)/home");
+        }else{
+                    Alert.alert("Error", data.message);
+        }
+      } else {
+        // Handle login failure (e.g., incorrect credentials)
+        Alert.alert(
+          "Login Failed",
+          data.message || "Please check your credentials"
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ImageBackground
-      src="../assets/images/image.png"
+      source={require("../assets/images/image.png")}
       resizeMode="cover"
       style={styles.Container}
     >
@@ -32,15 +77,7 @@ export default function index() {
           size={35}
           color={Colors.light.primary}
         />
-        <Text
-          style={{
-            fontSize: 30,
-            fontWeight: "bold",
-            color: Colors.light.primary,
-          }}
-        >
-          MoonBank
-        </Text>
+        <Text style={styles.title}>MoonBank</Text>
       </View>
 
       <View style={styles.TextInputStyle}>
@@ -50,33 +87,31 @@ export default function index() {
           keyboardType="email-address"
           autoCapitalize="none"
           selectionColor={"grey"}
-          style={{
-            color: "grey",
-            width: "90%",
-            paddingHorizontal: 10,
-          }}
+          style={styles.input}
+          value={email}
+          onChangeText={setEmail}
         />
       </View>
+
       <View style={styles.TextInputStyle}>
         <Feather name="lock" size={24} color="grey" />
         <TextInput
+          placeholder="Password"
           keyboardType="default"
           autoCapitalize="none"
           secureTextEntry={true}
-          inputMode="text"
           selectionColor={"grey"}
-          style={{
-            color: "grey",
-            width: "90%",
-            paddingHorizontal: 10,
-          }}
+          style={styles.input}
+          value={password}
+          onChangeText={setPassword}
         />
       </View>
 
       <ButtonComponent
-        text="Login"
+        text={loading ? "Logging in..." : "Login"}
         bordered={false}
-        onPress={() => router.navigate("/(tabs)/home")}
+        onPress={handleLogin}
+        disabled={loading}
       />
     </ImageBackground>
   );
@@ -90,6 +125,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 20,
   },
+  title: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: Colors.light.primary,
+  },
   TextInputStyle: {
     width: "100%",
     height: 50,
@@ -101,5 +141,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     gap: 10,
+  },
+  input: {
+    color: "grey",
+    width: "90%",
+    paddingHorizontal: 10,
   },
 });
